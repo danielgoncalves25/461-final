@@ -5,12 +5,12 @@ using UnityEngine.AI;
 
 public class AIEnemy : MonoBehaviour
 {
-    public enum ENEMY_STATE { PATROL, CHASE, ATTACK };
+    public enum ENEMY_STATE { IDLE, PATROL, CHASE, ATTACK };
 
-    public bool isPatrolling;
     public Transform player;
     public Transform[] wayPoints;
-    public Transform eyes;
+    public float sphereRadius = 5f;
+    public float viewRadius = 10f;
 
 
     //Enemy spawns on first wayPoint location
@@ -20,7 +20,9 @@ public class AIEnemy : MonoBehaviour
     ENEMY_STATE state;
     RaycastHit hit;
     LayerMask mask;
-
+    bool isClose;
+    bool seePlayer;
+    bool view;
 
 
     void Awake()
@@ -29,7 +31,6 @@ public class AIEnemy : MonoBehaviour
         agent = gameObject.GetComponent<NavMeshAgent>();
         mask = LayerMask.GetMask("Player");
         state = ENEMY_STATE.PATROL;
-
     }
 
     void Start()
@@ -39,25 +40,86 @@ public class AIEnemy : MonoBehaviour
 
     void Update()
     {
-        Debug.DrawRay(eyes.position, eyes.TransformDirection(Vector3.forward) * 50, Color.red);
-        bool seePlayer = Physics.Raycast(eyes.position, eyes.TransformDirection(Vector3.forward) * 50, out hit, Mathf.Infinity, mask);
-        //if (Physics.Raycast(eyes.position, eyes.TransformDirection(Vector3.forward) * 50, out hit, Mathf.Infinity, mask))
-        //{
-        //    Debug.Log("I SEE U");
-        }
-        if (Physics.OverlapSphere(transform.position, 7, mask).Length >= 1)
+        Collider[] playerInView = Physics.OverlapSphere(transform.position, viewRadius, mask);
+        print(playerInView.Length);
+        if (playerInView.Length >= 1)
         {
-            Debug.Log("YOU ARE CLOSE");
+            Vector3 dir = (player.position - transform.position).normalized;
+            if (Vector3.Angle(transform.forward, dir) < 90 / 2)
+                seePlayer = true;
+            else
+                seePlayer = false;
         }
-        if (state == ENEMY_STATE.PATROL && agent.remainingDistance < 1f)
+        isClose = Physics.OverlapSphere(transform.position, sphereRadius, mask).Length >= 1;
+        switch (state)
         {
-            updateWayPointIndex();
-            Patrol();
-        } else if (seePlayer) {
-            Chase();
+            case ENEMY_STATE.PATROL:
+                Patrol();
+                break;
+            case ENEMY_STATE.CHASE:
+                Chase();
+                break;
+            case ENEMY_STATE.ATTACK:
+                Attack();
+                break;
         }
-        
+        updateAnimation();
     }
+    void Patrol()
+    {
+        if (seePlayer)
+            state = ENEMY_STATE.CHASE;
+      
+        if (state == ENEMY_STATE.PATROL)
+        {
+            if (agent.remainingDistance < .5f)
+            {
+                updateWayPointIndex();
+                transform.LookAt(wayPoints[wayPointIndex].position);
+                agent.SetDestination(wayPoints[wayPointIndex].position);
+            } else if (agent.pathPending)
+            {
+                return;
+            } else
+            {
+                transform.LookAt(wayPoints[wayPointIndex].position);
+                agent.SetDestination(wayPoints[wayPointIndex].position);
+            }
+        }
+       
+
+    }
+    void Chase()
+    {
+        if (isClose)
+            state = ENEMY_STATE.ATTACK;
+        if (state == ENEMY_STATE.CHASE)
+        {
+            if (seePlayer)
+            {
+                //if (Vector3.Distance(transform.position, player.position) >= 6.5f)
+                //{
+                //    agent.isStopped = true;
+                //}
+                transform.LookAt(player.position);
+                agent.SetDestination(player.position);
+                agent.speed = 3;
+            }
+            else
+            {
+                state = ENEMY_STATE.PATROL;
+                agent.speed = 1;
+            }
+        }
+    }
+    void Attack()
+    {
+        if (!isClose)
+        {
+            state = ENEMY_STATE.CHASE;
+        }
+    }
+    
     void updateWayPointIndex()
     {
         if (wayPointIndex == wayPoints.Length -1)
@@ -67,26 +129,31 @@ public class AIEnemy : MonoBehaviour
             wayPointIndex++;
         }
     }
-    void Patrol()
-    {
-        state = ENEMY_STATE.PATROL;
-        transform.LookAt(wayPoints[wayPointIndex].position);
-        agent.SetDestination(wayPoints[wayPointIndex].position);
 
-    }
-    void Chase()
+    void updateAnimation()
     {
-        state = ENEMY_STATE.CHASE;
-        agent.SetDestination(player.position);
+        switch (state)
+        {
+            case ENEMY_STATE.IDLE:
+                anim.Play("Idle");
+                break;
+            case ENEMY_STATE.PATROL:
+                anim.Play("Walk");
+                break;
+            case ENEMY_STATE.CHASE:
+                anim.Play("Run");
+                break;
+            case ENEMY_STATE.ATTACK:
+                anim.Play("Attack1");
+                break;
+      
+        }
     }
-void Attack()
-    {
 
-    }
     void OnDrawGizmosSelected()
     {
         // Draw a yellow sphere at the transform's position
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, 7);
+        Gizmos.DrawWireSphere(transform.position, viewRadius);
     }
 }
