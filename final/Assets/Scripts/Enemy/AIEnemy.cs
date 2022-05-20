@@ -41,7 +41,6 @@ public class AIEnemy : MonoBehaviour
     void Update()
     {
         Collider[] playerInView = Physics.OverlapSphere(transform.position, viewRadius, mask);
-        print(playerInView.Length);
         if (playerInView.Length >= 1)
         {
             Vector3 dir = (player.position - transform.position).normalized;
@@ -67,7 +66,7 @@ public class AIEnemy : MonoBehaviour
     }
     void Patrol()
     {
-        if (seePlayer)
+        if (seePlayer && Vector3.Distance(transform.position, player.position) <= 10f)
             state = ENEMY_STATE.CHASE;
       
         if (state == ENEMY_STATE.PATROL)
@@ -77,30 +76,23 @@ public class AIEnemy : MonoBehaviour
                 updateWayPointIndex();
                 transform.LookAt(wayPoints[wayPointIndex].position);
                 agent.SetDestination(wayPoints[wayPointIndex].position);
-            } else if (agent.pathPending)
-            {
+            } else if (agent.pathPending) {
                 return;
-            } else
-            {
+            } else {
                 transform.LookAt(wayPoints[wayPointIndex].position);
                 agent.SetDestination(wayPoints[wayPointIndex].position);
             }
         }
-       
-
     }
     void Chase()
     {
         if (isClose)
             state = ENEMY_STATE.ATTACK;
+
         if (state == ENEMY_STATE.CHASE)
         {
-            if (seePlayer)
+            if (seePlayer && Vector3.Distance(transform.position, player.position) <= 10f)
             {
-                //if (Vector3.Distance(transform.position, player.position) >= 6.5f)
-                //{
-                //    agent.isStopped = true;
-                //}
                 transform.LookAt(player.position);
                 agent.SetDestination(player.position);
                 agent.speed = 3;
