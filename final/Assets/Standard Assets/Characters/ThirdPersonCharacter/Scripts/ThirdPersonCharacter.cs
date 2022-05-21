@@ -43,7 +43,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		}
 
 
-		public void Move(Vector3 move, bool crouch, bool jump)
+		public void Move(Vector3 move, bool crouch, bool jump, bool attack)
 		{
 
 			// convert the world relative moveInput vector into a local-relative
@@ -61,7 +61,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			// control and velocity handling is different when grounded and airborne:
 			if (m_IsGrounded)
 			{
-				HandleGroundedMovement(crouch, jump);
+				HandleGroundedMovement(crouch, jump, attack);
 			}
 			else
 			{
@@ -163,7 +163,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 		}
 
 
-		void HandleGroundedMovement(bool crouch, bool jump)
+		void HandleGroundedMovement(bool crouch, bool jump, bool attack)
 		{
 			// check whether conditions are right to allow a jump:
 			if (jump && !crouch && m_Animator.GetCurrentAnimatorStateInfo(0).IsName("Grounded"))
@@ -173,6 +173,9 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 				m_IsGrounded = false;
 				m_Animator.applyRootMotion = false;
 				m_GroundCheckDistance = 0.1f;
+			} else if (attack && !crouch && m_Animator.GetCurrentAnimatorStateInfo(0).IsName("Grounded"))
+            {
+				m_Animator.SetTrigger("Attack");
 			}
 		}
 

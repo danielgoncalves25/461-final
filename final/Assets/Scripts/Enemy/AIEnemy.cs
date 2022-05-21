@@ -9,20 +9,20 @@ public class AIEnemy : MonoBehaviour
 
     public Transform player;
     public Transform[] wayPoints;
-    public float sphereRadius = 5f;
+    public float attackRadius = 5f;
     public float viewRadius = 10f;
+    public ENEMY_STATE state;
 
 
     //Enemy spawns on first wayPoint location
     int wayPointIndex = 1;
+    Health health;
     Animation anim;
     NavMeshAgent agent;
-    ENEMY_STATE state;
     RaycastHit hit;
     LayerMask mask;
     bool isClose;
     bool seePlayer;
-    bool view;
 
 
     void Awake()
@@ -30,6 +30,7 @@ public class AIEnemy : MonoBehaviour
         anim = gameObject.GetComponent<Animation>();
         agent = gameObject.GetComponent<NavMeshAgent>();
         mask = LayerMask.GetMask("Player");
+        health = GameObject.FindGameObjectWithTag("Player").GetComponent<Health>();
         state = ENEMY_STATE.PATROL;
     }
 
@@ -40,29 +41,34 @@ public class AIEnemy : MonoBehaviour
 
     void Update()
     {
-        Collider[] playerInView = Physics.OverlapSphere(transform.position, viewRadius, mask);
-        if (playerInView.Length >= 1)
+        if (player != null)
         {
-            Vector3 dir = (player.position - transform.position).normalized;
-            if (Vector3.Angle(transform.forward, dir) < 90 / 2)
-                seePlayer = true;
-            else
-                seePlayer = false;
+            Collider[] playerInView = Physics.OverlapSphere(transform.position, viewRadius, mask);
+            if (playerInView.Length >= 1)
+            {
+                Vector3 dir = (player.position - transform.position).normalized;
+                if (Vector3.Angle(transform.forward, dir) < 90 / 2)
+                    seePlayer = true;
+                else
+                    seePlayer = false;
+            }
+            isClose = Physics.OverlapSphere(transform.position, attackRadius, mask).Length >= 1;
+            switch (state)
+            {
+                case ENEMY_STATE.PATROL:
+                    Patrol();
+                    break;
+                case ENEMY_STATE.CHASE:
+                    Chase();
+                    break;
+                case ENEMY_STATE.ATTACK:
+                    Attack();
+                    break;
+            }
         }
-        isClose = Physics.OverlapSphere(transform.position, sphereRadius, mask).Length >= 1;
-        switch (state)
-        {
-            case ENEMY_STATE.PATROL:
-                Patrol();
-                break;
-            case ENEMY_STATE.CHASE:
-                Chase();
-                break;
-            case ENEMY_STATE.ATTACK:
-                Attack();
-                break;
-        }
-        updateAnimation();
+        else
+            state = ENEMY_STATE.IDLE;
+         updateAnimation();
     }
     void Patrol()
     {

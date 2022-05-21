@@ -13,9 +13,8 @@ public class Health : MonoBehaviour
 			//If health is < 0 then die
 			if (healthPoints <= 0)
             {
-				print("Dieing");
-				explosion.Play();
-                Destroy(gameObject, .2f);
+				death.Play();
+                Destroy(gameObject, .3f);
             }
 		}
 	}
@@ -23,11 +22,11 @@ public class Health : MonoBehaviour
 	[SerializeField]
 	public float healthPoints = 100f;
 
-	private ParticleSystem explosion;
+	private ParticleSystem death;
 
 
 	void Start()
     {
-		explosion = GetComponent<ParticleSystem>();
+		death = GetComponent<ParticleSystem>();
 	}
 }

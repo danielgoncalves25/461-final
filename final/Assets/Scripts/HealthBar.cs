@@ -7,6 +7,7 @@ public class HealthBar : MonoBehaviour
 {
 
     public Transform lookForward;
+    public bool isPlayer;
 
     private Image image;
     private Health health;
@@ -15,7 +16,7 @@ public class HealthBar : MonoBehaviour
     void Awake()
     {
         image = gameObject.GetComponentInChildren<Image>();
-        health = gameObject.GetComponentInParent<Health>();
+        health = isPlayer ? GameObject.FindGameObjectWithTag("Player").GetComponent<Health>() : gameObject.GetComponentInParent<Health>();
     }
 
     void Start()
@@ -27,6 +28,7 @@ public class HealthBar : MonoBehaviour
     void Update()
     {
         image.fillAmount = health.HealthPoints / maxHealth;
-        transform.LookAt(lookForward);
+        if (!isPlayer)
+            transform.LookAt(lookForward);
     }
 }
